@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>2D Platformer</title>
+  <style>
+    body {
+      margin: 0; overflow: hidden;
+      display: flex; justify-content: center; align-items: center;
+      height: 100vh; background: #000;
+    }
+    #gameContainer {
+      position: relative;
+      width: 1600px; height: 1200px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.8);
+    }
+    canvas {
+      display: block; width:100%; height:100%;
+      background: #000;
+    }
+    /* Title screen */
+    #startScreen {
+      position: absolute; top:0; left:0;
+      width:100%; height:100%;
+      background:rgba(0,0,0,0.85);
+      display:flex; flex-direction:column;
+      justify-content:center; align-items:center;
+      color:#fff; z-index:20;
+    }
+    #startScreen h1 { font-size:80px; margin-bottom:40px; }
+    #startBtn {
+      padding:20px 40px; font-size:32px;
+      background:#ffcc00; border:none; border-radius:10px;
+      cursor:pointer;
+    }
+    /* Touch buttons */
+    #gameContainer button {
+      position: absolute; bottom:20px;
+      padding:15px 25px; font-size:20px;
+      background:rgba(0,0,0,0.5); color:#fff;
+      border:none; border-radius:10px; cursor:pointer;
+      z-index:10;
+    }
+    #jumpBtn { left:20px; }
+    #powerupBtn { right:20px; }
+    /* Restart button */
+    #restartBtn {
+      position:absolute; bottom:100px;
+      left:50%; transform:translateX(-50%);
+      padding:15px 30px; font-size:24px;
+      background:rgba(200,0,0,0.8); color:#fff;
+      border:none; border-radius:10px; cursor:pointer;
+      z-index:20; display:none;
+    }
+  </style>
+</head>
+<body>
+  <div id="gameContainer">
+    <canvas id="canvas"></canvas>
+    <div id="startScreen">
+      <h1>My Platformer</h1>
+      <button id="startBtn">Start Game</button>
+      <p>Press Enter or Tap “Start”</p>
+    </div>
+    <button id="jumpBtn">Jump</button>
+    <button id="powerupBtn">Power-Up</button>
+    <button id="restartBtn">Restart</button>
+  </div>
+
+  <script>
+  // —————————————————————
+  // BASIC SETUP
+  // —————————————————————
+  const canvas      = document.getElementById("canvas"),
+        ctx         = canvas.getContext("2d");
+  canvas.width      = 1600;
+  canvas.height     = 1200;
+
+  const startScreen = document.getElementById("startScreen"),
+        startBtn    = document.getElementById("startBtn"),
+        jumpBtn     = document.getElementById("jumpBtn"),
+        powerupBtn  = document.getElementById("powerupBtn"),
+        restartBtn  = document.getElementById("restartBtn");
+
+  let gameStarted = false;
+  startBtn.onclick = () => {
+    gameStarted = true;
+    startScreen.style.display = "none";
+    jumpBtn.style.display = powerupBtn.style.display = "block";
+  };
+  document.addEventListener("keydown", e => {
+    if (!gameStarted && (e.key === "Enter" || e.key === " ")) {
+      startBtn.click();
+    }
+    if (gameOver && e.key.toLowerCase() === "r") {
+      resetGame();
+    }
+  });
+
+  jumpBtn.style.display = powerupBtn.style.display = "none";
+
+  // —————————————————————
+  // GAME STATE
+  // —————————————————————
+  const groundY         = canvas.height - 560;
+  let baseScroll      = 4;
+  let bgSpeed         = 1.5;
+  let powerSpeedBoost = 4;
+
+  let scrollSpeed   = baseScroll,
+      score         = 0,
+      distance      = 0,
+      rings         = 0,
+      gameOver      = false,
+      lastObstacleX = 0,
+      powerActive   = false,
+      powerTimer    = 0,
+      bgOffset      = 0;
+
+  // —————————————————————
+  // LOAD IMAGES
+  // —————————————————————
+  const background   = new Image(); background.src   = "background.png";
+  const character    = new Image(); character.src    = "character.png";
+  const jumpSprite   = new Image(); jumpSprite.src   = "character_jump.png";
+  const powerSprite  = new Image(); powerSprite.src  = "character_power.png";
+  const obstacleImg  = new Image(); obstacleImg.src  = "obstacle.png";
+  const ringImg      = new Image(); ringImg.src      = "ring.png";
+  const flyPowerImg  = new Image(); flyPowerImg.src  = "fly_power.png";      // collectible
+  const flySprite    = new Image(); flySprite.src    = "character_fly.png";   // in‑flight
+
+  // —————————————————————
+  // PLAYER
+  // —————————————————————
+  const player = {
+    x:100, y:groundY-149,
+    width:200, height:149,
+    y_vel:0, jumping:false,
+    jumpStrength:-20,
+    hitOffset:30,
+    flyActive:false,
+    flyTimer:0
+  };
+
+  // —————————————————————
+  // ENTITIES
+  // —————————————————————
+  const obstacles = [],
+        ringsArr  = [],
+        flies     = [];
+
+  function spawnObstacle(){
+    const sp = 1000 + Math.random()*1000,
+          s  = 60;
+    lastObstacleX = Math.max(lastObstacleX + sp, canvas.width + 1000);
+    obstacles.push({ x:lastObstacleX, y:groundY-s, width:s, height:s, passed:false });
+
+
+    if (Math.random() < 0.9) {
+    const ringCount = Math.floor(Math.random() * 5) + 1; // 1 to 5 rings
+     for (let i = 0; i < ringCount; i++) {
+     ringsArr.push({
+        
+        x: canvas.width + scrollX + Math.random() * 800,
+        y: Math.random() * (groundY - 200),
+        x: lastObstacleX + 100,
+        y: groundY - 200 - Math.random()*200,
+        width:40, height:40, 
+        collected:false,
+       // await sleep(1000);
+        
+      });
+    }
+    }
+    
+    if (Math.random() < 0.5) {
+      flies.push({
+        x: lastObstacleX + 200,
+        y: groundY - 300 - Math.random()*200,
+        size:50, collected:false
+      });
+    }
+  }
+
+  // —————————————————————
+  // INPUT
+  // —————————————————————
+  const keys = {};
+  document.addEventListener("keydown", e => {
+    keys[e.key] = true;
+    if (e.key === "Shift") activatePower();
+  });
+  document.addEventListener("keyup", e => keys[e.key] = false);
+
+  jumpBtn.addEventListener("touchstart", e => {
+    e.preventDefault();
+    if (!player.jumping) {
+      player.y_vel = player.jumpStrength;
+      player.jumping = true;
+    }
+  }, { passive:false });
+
+  powerupBtn.addEventListener("touchstart", e => {
+    e.preventDefault();
+    activatePower();
+  }, { passive:false });
+
+  restartBtn.addEventListener("click", resetGame);
+
+  function activatePower(){
+    if(!powerActive && rings > 0){
+      powerActive = true;
+      powerTimer  = 300;
+    }
+  }
+
+  // —————————————————————
+  // UPDATE
+  // —————————————————————
+  function update(){
+    if (!gameStarted || gameOver) return;
+
+    // Jump
+    if ((keys[" "]||keys["ArrowUp"]) && !player.jumping) {
+      player.y_vel = player.jumpStrength;
+      player.jumping = true;
+    }
+
+    // Gravity vs. Fly
+    if (!player.flyActive) {
+      player.y_vel += 0.6;
+      player.y     += player.y_vel;
+      if (player.y + player.height >= groundY) {
+        player.y        = groundY - player.height;
+        player.y_vel    = 0;
+        player.jumping  = false;
+      }
+    } else {
+      player.y = 200; // fixed fly altitude
+      player.flyTimer--;
+      if (player.flyTimer <= 0) {
+        player.flyActive = false;
+      }
+    }
+
+    // Scroll speed
+    scrollSpeed = baseScroll
+                + (player.jumping ? 2 : 0)
+                + (powerActive    ? powerSpeedBoost : 4);
+
+    updateObstacles();
+    updateRings();
+    updateFlies();
+
+    distance += scrollSpeed / 10;
+
+    // Ring-power timer
+    if (powerActive) {
+      powerTimer--;
+      if (powerTimer % 60 === 0) rings--;
+      if (powerTimer <= 0 || rings <= 0) powerActive = false;
+    }
+
+    // Game Over?
+    if (gameOver) {
+      restartBtn.style.display = "block";
+      jumpBtn.style.display = powerupBtn.style.display = "none";
+    }
+
+    bgOffset = (bgOffset - bgSpeed) % canvas.width;
+  }
+
+  function updateObstacles(){
+    for (let i=obstacles.length-1; i>=0; i--){
+      const o = obstacles[i];
+      o.x -= scrollSpeed;
+      if (o.x + o.width < 0) obstacles.splice(i,1);
+      if (!o.passed && o.x + o.width < player.x) {
+        o.passed = true;
+        score++;
+      }
+      if (!player.flyActive && !powerActive){
+        const px = player.x + player.hitOffset,
+              py = player.y + player.hitOffset,
+              pw = player.width  - 2*player.hitOffset,
+              ph = player.height - 2*player.hitOffset;
+        if (px < o.x+o.width && px+pw > o.x && py+ph > o.y) {
+          gameOver = true;
+        }
+      }
+    }
+    if (obstacles.length < 3) spawnObstacle();
+  }
+
+  function updateRings(){
+    for (let i=ringsArr.length-1; i>=0; i--){
+      const r = ringsArr[i];
+      r.x -= scrollSpeed;
+      if (r.x + r.width < 0) ringsArr.splice(i,1);
+      if (!r.collected &&
+          player.x < r.x + r.width &&
+          player.x + player.width > r.x &&
+          player.y + player.height > r.y &&
+          player.y < r.y + r.height) {
+        r.collected = true;
+        rings++;
+      }
+    }
+  }
+
+  function updateFlies(){
+    for (let i=flies.length-1; i>=0; i--){
+      const f = flies[i];
+      f.x -= scrollSpeed;
+      if (f.x + f.size < 0) flies.splice(i,1);
+      if (!f.collected &&
+          player.jumping &&
+          player.x < f.x + f.size &&
+          player.x + player.width > f.x &&
+          player.y < f.y + f.size &&
+          player.y + player.height > f.y) {
+        f.collected      = true;
+        player.flyActive = true;
+        player.flyTimer  = 300; // 5s
+        flies.splice(i,1);
+      }
+    }
+  }
+
+  // —————————————————————
+  // DRAW (with 1.3× scale on ring-power)
+  // —————————————————————
+  function draw(){
+    // Background
+    ctx.drawImage(background, bgOffset, 0, canvas.width, canvas.height);
+    ctx.drawImage(background, bgOffset + canvas.width, 0, canvas.width, canvas.height);
+
+    // Invisible ground
+    ctx.fillStyle = "#00000000";
+    ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+
+    if (gameStarted) {
+      // Choose sprite
+      let spr = character;
+      if (player.flyActive)    spr = flySprite;
+      else if (player.jumping) spr = jumpSprite;
+      else if (powerActive)    spr = powerSprite;
+
+      // Compute draw dimensions
+      let drawW = player.width,
+          drawH = player.height,
+          drawX = player.x,
+          drawY = player.y;
+      if (powerActive) {
+        const scale = 1.0;
+        drawW  = player.width  * 1.1;
+        drawH  = player.height * 1.1;
+        drawY  = player.y - (drawH - player.height);
+        baseScroll      = 15;
+        bgSpeed         = 12.5;
+        powerSpeedBoost = 15;
+        distance += scrollSpeed / 6;
+      }
+      
+      else
+      
+      {
+        player.width    = 200;
+        player.height   = 149;
+        baseScroll      = 5;
+        bgSpeed         = 2.5;
+        powerSpeedBoost = 5;
+        distance += scrollSpeed / 10;
+      }
+
+
+
+
+      ctx.drawImage(spr, drawX, drawY, drawW, drawH);
+
+      // Entities
+      obstacles.forEach(o=> ctx.drawImage(obstacleImg, o.x, o.y, o.width, o.height));
+      ringsArr.forEach(r=> !r.collected && ctx.drawImage(ringImg, r.x, r.y, r.width, r.height));
+      flies.forEach(f=> !f.collected && ctx.drawImage(flyPowerImg, f.x, f.y, f.size, f.size));
+
+      // HUD
+      ctx.fillStyle = "white"; ctx.font = "24px Arial";
+      ctx.fillText(`Score: ${score}`,                  20,  40);
+      ctx.fillText(`Distance: ${Math.floor(distance)}m`,20,  80);
+      ctx.fillText(`Rings: ${rings}`,                  20, 120);
+      if (powerActive) {
+        ctx.fillStyle = "yellow";
+        ctx.fillText("Power-Up Active!", 20, 160);
+      }
+      
+      if (player.flyActive) {
+        ctx.fillStyle = "cyan";
+        ctx.fillText(`Flying: ${(player.flyTimer/60).toFixed(1)}s`, 20, 200);
+        player.width = 150;
+        player.height = 249;
+        baseScroll      = 10;
+        bgSpeed         = 20.5;
+        powerSpeedBoost = 10;
+        distance += scrollSpeed / 8;
+      }
+      
+      else
+      
+      {
+        player.width    = 200;
+        player.height   = 149;
+        baseScroll      = 5;
+        bgSpeed         = 2.5;
+        powerSpeedBoost = 5;
+        distance += scrollSpeed / 10;
+      }
+
+      // Game over overlay
+      if (gameOver) {
+        ctx.fillStyle = "rgba(0,0,0,0.7)";
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = "red"; ctx.font = "48px sans-serif";
+        ctx.fillText("Game Over!", canvas.width/2 -150, canvas.height/2);
+        ctx.font = "24px sans-serif";
+        ctx.fillText("Click Restart or press R", canvas.width/2 -150, canvas.height/2 +40);
+      }
+    }
+  }
+
+  // —————————————————————
+  // MAIN LOOP
+  // —————————————————————
+  function loop(){
+    update();
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  // —————————————————————
+  // INITIALIZE
+  // —————————————————————
+  window.onload = () => {
+    spawnObstacle();
+    loop();
+  };
+
+  // —————————————————————
+  // RESET FUNCTION
+  // —————————————————————
+  function resetGame(){
+    score            = 0;
+    distance         = 0;
+    rings            = 0;
+    gameOver         = false;
+    powerActive      = false;
+    powerTimer       = 0;
+    player.flyActive = false;
+    player.flyTimer  = 0;
+    lastObstacleX    = 0;
+    bgOffset         = 0;
+    obstacles.length = 0;
+    ringsArr.length  = 0;
+    flies.length     = 0;
+    player.y         = groundY - player.height;
+    player.y_vel     = 0;
+    player.jumping   = false;
+    restartBtn.style.display = "none";
+    jumpBtn.style.display     = powerupBtn.style.display = "block";
+    spawnObstacle();
+  }
+  </script>
+</body>
+</html>
