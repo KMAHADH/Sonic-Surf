@@ -149,7 +149,7 @@
         flies     = [];
 
   function spawnObstacle(){
-    const sp = 1000 + Math.random()*1000,
+    const sp = 10 + Math.random()*10,
           s  = 60;
     lastObstacleX = Math.max(lastObstacleX + sp, canvas.width + 1000);
     obstacles.push({ x:lastObstacleX, y:groundY-s, width:s, height:s, passed:false });
