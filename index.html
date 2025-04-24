@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Sonicurfer</title>
+  <title>Sonic-Surfer</title>
   <style>
     body {
       margin: 0; overflow: hidden;
@@ -150,7 +150,7 @@
 
   function spawnObstacle(){
     const sp = 10 + Math.random()*10,
-          s  = 60;
+          s  = 200;
     lastObstacleX = Math.max(lastObstacleX + sp, canvas.width + 1000);
     obstacles.push({ x:lastObstacleX, y:groundY-s, width:s, height:s, passed:false });
 
