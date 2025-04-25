@@ -139,6 +139,8 @@
     hitOffset:30,
     flyActive:false,
     flyTimer:0
+    invincible: false,
+    invincibleTimer: 0,
   };
 
   // —————————————————————
@@ -241,6 +243,19 @@
         player.flyActive = false;
       }
     }
+
+    if (!player.flyActive && player.invincibleTimer === 0 && !player.invincible) {
+  player.invincible = true;
+  player.invincibleTimer = 120; // 2 seconds at 60fps
+}
+
+if (player.invincibleTimer > 0) {
+  player.invincibleTimer--;
+  if (player.invincibleTimer === 0) {
+    player.invincible = false;
+  }
+}
+
 
     // Scroll speed
     scrollSpeed = baseScroll
@@ -423,6 +438,16 @@
         ctx.font = "24px sans-serif";
         ctx.fillText("Click Restart or press R", canvas.width/2 -150, canvas.height/2 +40);
       }
+
+        if (
+        !player.invincible &&
+         player.x < ob.x - scrollX + ob.width &&
+         player.x + player.width > ob.x - scrollX &&
+         player.y < ob.y &&
+         player.y + player.height > ob.y - ob.height
+      )
+
+      
     }
   }
 
