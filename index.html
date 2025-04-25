@@ -391,8 +391,11 @@
 
 
 
+      if (!player.invincible || Math.floor(player.invincibleTimer / 10) % 2 === 0) {
+          ctx.drawImage(spr, drawX, drawY, drawW, drawH);
+          }
 
-      ctx.drawImage(spr, drawX, drawY, drawW, drawH);
+   //   ctx.drawImage(spr, drawX, drawY, drawW, drawH);
 
       // Entities
       obstacles.forEach(o=> ctx.drawImage(obstacleImg, o.x, o.y, o.width, o.height));
