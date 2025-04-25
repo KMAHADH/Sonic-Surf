@@ -437,17 +437,7 @@ if (player.invincibleTimer > 0) {
         ctx.fillText("Game Over!", canvas.width/2 -150, canvas.height/2);
         ctx.font = "24px sans-serif";
         ctx.fillText("Click Restart or press R", canvas.width/2 -150, canvas.height/2 +40);
-      }
-
-        if (
-        !player.invincible &&
-         player.x < ob.x - scrollX + ob.width &&
-         player.x + player.width > ob.x - scrollX &&
-         player.y < ob.y &&
-         player.y + player.height > ob.y - ob.height
-      );
-
-      
+      }  
     }
   }
 
