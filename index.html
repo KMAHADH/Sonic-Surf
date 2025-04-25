@@ -244,17 +244,19 @@
       }
     }
 
-    if (!player.flyActive) {
-  player.invincible = true;
-  player.invincibleTimer = 120; // 2 seconds at 60fps
-}
+    if (!player.flyActive && player.invincibleTimer === 0 && !player.invincible) {
+    player.invincible = true;
+    player.invincibleTimer = 120;
+   }
 
-if (player.invincibleTimer > 0) {
-  player.invincibleTimer--;
+
+  if (player.invincibleTimer > 0) {
+    player.invincibleTimer--;
   if (player.invincibleTimer === 0) {
     player.invincible = false;
   }
 }
+
 
 
     // Scroll speed
@@ -293,14 +295,14 @@ if (player.invincibleTimer > 0) {
         o.passed = true;
         score++;
       }
-      if (!player.flyActive && !powerActive){
+      if (!player.flyActive && !powerActive && !player.invincible){
         const px = player.x + player.hitOffset,
               py = player.y + player.hitOffset,
               pw = player.width  - 2*player.hitOffset,
               ph = player.height - 2*player.hitOffset;
         if (px < o.x+o.width && px+pw > o.x && py+ph > o.y) {
-          gameOver = true;
-        }
+    gameOver = true;
+  }
       }
     }
     if (obstacles.length < 3) spawnObstacle();
