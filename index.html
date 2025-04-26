@@ -141,6 +141,7 @@
   flyTimer:0,
   invincible: false,
   invincibleTimer: 0,
+  let wasFlying = false; // Tracks if player *was* flying in the last frame 
 };
 
   // —————————————————————
@@ -249,7 +250,24 @@
 //    player.invincibleTimer = 120;
 //   }
 
+/ Detect end of flying
+if (wasFlying && !player.flyActive) {
+  player.invincible = true;
+  player.invincibleTimer = 120; // 2 seconds
+}
 
+// Decrease invincible timer
+if (player.invincible) {
+  player.invincibleTimer--;
+  if (player.invincibleTimer <= 0) {
+    player.invincible = false;
+  }
+}
+
+// Update wasFlying for the next frame
+wasFlying = player.flyActive;
+
+    
   if (player.invincibleTimer > 0) {
     player.invincibleTimer--;
   if (player.invincibleTimer === 0) {
