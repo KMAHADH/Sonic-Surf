@@ -116,7 +116,11 @@
       powerTimer    = 0,
       bgOffset      = 0;
       
-  let wasFlying = false; // Tracks if player *was* flying in the last frame 
+ let wasFlying = false; // Tracks if player *was* flying in the last frame 
+ let wasActive = false; // Tracks if player *was* active in the last frame 
+ let ringDecreaseTimer = 0; // Timer to track when to decrease rings
+ let lastRingDecreaseTime = 0;
+
 
   // —————————————————————
   // LOAD IMAGES
@@ -164,10 +168,8 @@
      for (let i = 0; i < ringCount; i++) {
      ringsArr.push({
         
-        x: canvas.width + scrollX + Math.random() * 800,
-        y: Math.random() * (groundY - 200),
         x: lastObstacleX + 100,
-        y: groundY - 200 - Math.random()*200,
+        y: groundY - 200 - Math.random() * 200,
         width:40, height:40, 
         collected:false,
        // await sleep(1000);
@@ -211,17 +213,45 @@
   restartBtn.addEventListener("click", resetGame);
 
   function activatePower(){
-    if(!powerActive && rings > 0){
-      powerActive = true;
-      powerTimer  = 300;
-    }
+  if(!powerActive && rings > 0){
+    powerActive = true;
+    powerTimer  = 600; // Timer for power-up duration
+    rings--; // Decrease one ring immediately when power-up is activated
+    ringDecreaseTimer = 0; // Reset the timer when power-up starts
+    lastRingDecreaseTime = performance.now(); // Set starting time
+
   }
+}
+
 
   // —————————————————————
   // UPDATE
   // —————————————————————
   function update(){
     if (!gameStarted || gameOver) return;
+
+     if (powerActive && rings > 0) {
+     let currentTime = performance.now();
+     ringDecreaseTimer++;
+    
+    //   rings--; // Keep subtracting one ring each frame while power-up is active
+  
+  
+ //     if (ringDecreaseTimer >= 240) {
+ //     rings--; // Decrease one ring every second
+ //     ringDecreaseTimer = 0; // Reset the timer for the next second
+ //   }
+  
+      
+       if (currentTime - lastRingDecreaseTime >= 1000) {
+      rings--;
+      lastRingDecreaseTime = currentTime; // Reset the timer
+    }
+  }
+      
+      
+
+
 
     // Jump
     if ((keys[" "]||keys["ArrowUp"]) && !player.jumping) {
@@ -251,8 +281,14 @@
 //    player.invincibleTimer = 120;
 //   }
 
-/ Detect end of flying
+// Detect end of flying
 if (wasFlying && !player.flyActive) {
+  player.invincible = true;
+  player.invincibleTimer = 120; // 2 seconds
+}
+
+// Detect end of power-up
+if (wasActive && !player.powerActive) {
   player.invincible = true;
   player.invincibleTimer = 120; // 2 seconds
 }
@@ -265,16 +301,9 @@ if (player.invincible) {
   }
 }
 
-// Update wasFlying for the next frame
+// Update wasFlying and wasActive for the next frame
 wasFlying = player.flyActive;
-
-    
-  if (player.invincibleTimer > 0) {
-    player.invincibleTimer--;
-  if (player.invincibleTimer === 0) {
-    player.invincible = false;
-  }
-}
+wasActive = player.powerActive;
 
 
 
@@ -286,20 +315,32 @@ wasFlying = player.flyActive;
     updateObstacles();
     updateRings();
     updateFlies();
-
-    distance += scrollSpeed / 10;
+    
+if (!gameOver) {
+  distance += scrollSpeed / 10;
+}
 
     // Ring-power timer
-    if (powerActive) {
-      powerTimer--;
-      if (powerTimer % 60 === 0) rings--;
-      if (powerTimer <= 0 || rings <= 0) powerActive = false;
-    }
+if (powerActive) {
+  powerTimer--;
+  if (powerTimer <= 0 || rings <= 0) {
+    powerActive = false;
+    player.invincible = true; // Make invincible when power-up expires
+    player.invincibleTimer = 120; // 2 seconds
+  }
+}
+
 
     // Game Over?
     if (gameOver) {
       restartBtn.style.display = "block";
       jumpBtn.style.display = powerupBtn.style.display = "none";
+
+if (!gameOver) {
+  distance += scrollSpeed / 10;
+}
+
+
     }
 
     bgOffset = (bgOffset - bgSpeed) % canvas.width;
@@ -394,7 +435,12 @@ wasFlying = player.flyActive;
         baseScroll      = 15;
         bgSpeed         = 12.5;
         powerSpeedBoost = 15;
-        distance += scrollSpeed / 6;
+    
+    if (!gameOver) {
+  distance += scrollSpeed / 15;
+}
+
+    
       }
       
       else
@@ -405,14 +451,20 @@ wasFlying = player.flyActive;
         baseScroll      = 5;
         bgSpeed         = 2.5;
         powerSpeedBoost = 5;
-        distance += scrollSpeed / 10;
+
+if (!gameOver) {
+  distance += scrollSpeed / 10;
+}
+
+
       }
 
 
 
-      if (!player.invincible || Math.floor(player.invincibleTimer / 10) % 2 === 0) {
-          ctx.drawImage(spr, drawX, drawY, drawW, drawH);
-          }
+if (!player.invincible || Math.floor(player.invincibleTimer / 10) % 2 === 0) {
+    ctx.drawImage(spr, drawX, drawY, drawW, drawH);
+}
+
 
    //   ctx.drawImage(spr, drawX, drawY, drawW, drawH);
 
@@ -428,7 +480,7 @@ wasFlying = player.flyActive;
       ctx.fillText(`Rings: ${rings}`,                  20, 120);
       if (powerActive) {
         ctx.fillStyle = "yellow";
-        ctx.fillText("Power-Up Active!", 20, 160);
+        ctx.fillText(`Power-Up Active! (${(powerTimer/60).toFixed(1)}s)`, 20, 160);
       }
       
       if (player.flyActive) {
@@ -439,7 +491,12 @@ wasFlying = player.flyActive;
         baseScroll      = 10;
         bgSpeed         = 20.5;
         powerSpeedBoost = 10;
-        distance += scrollSpeed / 8;
+      
+      if (!gameOver) {
+  distance += scrollSpeed / 8;
+}
+
+      
       }
       
       else
@@ -450,21 +507,61 @@ wasFlying = player.flyActive;
         baseScroll      = 5;
         bgSpeed         = 2.5;
         powerSpeedBoost = 5;
-        distance += scrollSpeed / 10;
+
+if (!gameOver) {
+  distance += scrollSpeed / 10;
+}
+
+
       }
 
       // Game over overlay
-      if (gameOver) {
-        ctx.fillStyle = "rgba(0,0,0,0.7)";
-        ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.fillStyle = "red"; ctx.font = "48px sans-serif";
-        ctx.fillText("Game Over!", canvas.width/2 -150, canvas.height/2);
-        ctx.font = "24px sans-serif";
-        ctx.fillText("Click Restart or press R", canvas.width/2 -150, canvas.height/2 +40);
-      }  
-    }
+// Game over overlay
+if (gameOver) {
+  // Save the current canvas state
+  ctx.save();
+
+  // Darken the screen to display the game over overlay
+  ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Set consistent alignment properties
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle"; // Use middle for vertical centering
+
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2; // Center the text vertically
+
+  // Ensure score, ringsCollected, and distance have valid values
+  const lines = [
+    { text: "Game Over!", font: "48px sans-serif", color: "red" },
+    { text: "", font: "48px sans-serif", color: "red" },
+    { text: "Your Score", font: "36px sans-serif", color: "white" },
+    { text: `Score: ${score}`, font: "30px sans-serif", color: "white" },
+    { text: `Rings: ${rings}`, font: "30px sans-serif", color: "white" },
+    { text: `Distance: ${Math.floor(distance)}`, font: "30px sans-serif", color: "white" },
+    { text: "", font: "48px sans-serif", color: "red" },
+    { text: "Click Restart or press R", font: "24px sans-serif", color: "yellow" },
+  ];
+
+  let currentY = centerY - (lines.length * 30) / 2; // Adjust starting Y position
+
+  // Draw each line of text
+  for (const line of lines) {
+    ctx.font = line.font;
+    ctx.fillStyle = line.color;
+    ctx.fillText(line.text, centerX, currentY);
+    currentY += 40; // Increase vertical spacing for each line
   }
 
+  // Restore the canvas state after game over text rendering
+  ctx.restore();
+}
+
+
+
+}
+}
   // —————————————————————
   // MAIN LOOP
   // —————————————————————
