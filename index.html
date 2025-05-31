@@ -23,7 +23,7 @@
         position: relative;
         width: 100vw;
         height: 100vh;
-        max-width: 1600px;
+        max-width: 2133px;
         max-height: 1200px;
         margin: 0 auto;
         overflow: hidden;
@@ -443,7 +443,7 @@ if (Math.random() < 0.9) { // 10% chance to spawn
   function activatePower(){
   if(!powerActive && rings > 0){
     powerActive = true;
-    powerTimer  = 900;
+    powerTimer  = 4000;
     rings--;
     ringDecreaseTimer = 11;
     lastRingDecreaseTime = performance.now();
@@ -561,7 +561,7 @@ distance += scrollSpeed /2;
    // Power-Up Expiration
  if (wasFlying && !player.flyActive) {
   player.invincible = true;
-  player.invincibleTimer = 120; // 2 seconds
+  player.invincibleTimer = 180; // 3 seconds
   stopFlyMusic(); // This should be FlyMusic's stop
 }
 
