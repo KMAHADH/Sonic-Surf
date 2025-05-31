@@ -1,23 +1,47 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Sonic-Surfer</title>
+  <img src="sonic-guitar.gif" id="titleGif" alt="Animated Title">
   <style>
     body {
+    
+    
       margin: 0; overflow: hidden;
       display: flex; justify-content: center; align-items: center;
       height: 100vh; background: #000;
     }
-    #gameContainer {
-      position: relative;
-      width: 1600px; height: 1200px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.8);
-    }
-    canvas {
-      display: block; width:100%; height:100%;
-      background: #000;
-    }
-    /* Title screen */
+    
+      @font-face {
+      font-family: 'SonicFont';
+      src: url('submergd.ttf') format('truetype');
+      }
+   
+   
+      #gameContainer {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        max-width: 1600px;
+        max-height: 1200px;
+        margin: 0 auto;
+        overflow: hidden;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+
+
+      canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        background: #000;
+        }
+
+
+    
+   
+       /* Title screen */
     #startScreen {
       position: absolute; top:0; left:0;
       width:100%; height:100%;
@@ -26,12 +50,76 @@
       justify-content:center; align-items:center;
       color:#fff; z-index:20;
     }
-    #startScreen h1 { font-size:80px; margin-bottom:40px; }
+   
+    #titleGif {
+ position: absolute;
+  top: 55%;
+  left: 49.6%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  pointer-events: none; /* allows clicks to go through */
+    }
+   
+   
+   #startScreen h1 {
+  font-family: 'SonicFont', sans-serif;
+  font-size: 6.1em;
+  color: #17afff;
+  
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+   text-shadow:
+     -4px -4px 0 white,
+      4px -4px 0 white,
+     -4px  4px 0 white,
+      4px  4px 0 white;
+
+     -4px -4px 0 #ffc900,
+      4px -4px 0 #ffc900,
+     -4px  4px 0 #ffc900,
+      4px  4px 0 #ffc900;
+      
+      
+      
+}
+
+
+#progressBarContainer {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid #fff;
+  border-radius: 10px;
+  z-index: 15;
+  overflow: hidden;
+}
+
+#progressBarFill {
+  height: 100%;
+  width: 0%;
+  background: #17afff;
+  border-radius: 10px 0 0 10px;
+  transition: width 0.2s ease;
+}
+
+
+
+    #startScreen h1 { margin-bottom:40px; }
     #startBtn {
-      padding:20px 40px; font-size:32px;
+      padding:20px 40px; font-size:6vw;
       background:#ffcc00; border:none; border-radius:10px;
       cursor:pointer;
     }
+   
+   #startScreen p { font-size:25px; margin-top:300px;}
+   
     /* Touch buttons */
     #gameContainer button {
       position: absolute; bottom:20px;
@@ -40,13 +128,14 @@
       border:none; border-radius:10px; cursor:pointer;
       z-index:10;
     }
+   
     #jumpBtn { left:20px;  font-size:40px;}
     #powerupBtn { right:20px;  font-size:40px;}
     /* Restart button */
     #restartBtn {
       position:absolute; bottom:100px;
       left:50%; transform:translateX(-50%);
-      padding:45px 30px; font-size:40px;
+      padding:3vw, 3vw; font-size:4vw;
       background:rgba(200,0,0,0.8); color:#fff;
       border:none; border-radius:10px; cursor:pointer;
       z-index:20; display:none;
@@ -54,26 +143,72 @@
   </style>
 </head>
 <body>
+
+<div id="loadScreen" style="
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: black;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2em;
+    z-index: 9999;
+    cursor: pointer;
+">
+    Tap or Click to Start
+</div>
+
   <div id="gameContainer">
+  
+  <div id="progressBarContainer">
+  <div id="progressBarFill"></div>
+</div>
+
     <canvas id="canvas"></canvas>
     <div id="startScreen">
-      <h1>SONIC SURFER</h1>
+      <h1>SONIC  SURFER</h1>
       <button id="startBtn">Start Game</button>
-      <p>Press Enter or Tap “Start”</p>
+      <p>Press Enter or Tap "Start"</p>
     </div>
     <button id="jumpBtn">Jump</button>
     <button id="powerupBtn">Power-Up</button>
     <button id="restartBtn">Restart</button>
   </div>
+  
+  
 
   <script>
+  
+  
+  
   // —————————————————————
   // BASIC SETUP
   // —————————————————————
-  const canvas      = document.getElementById("canvas"),
-        ctx         = canvas.getContext("2d");
-  canvas.width      = 1600;
-  canvas.height     = 1200;
+const canvas = document.getElementById("canvas"),
+      ctx    = canvas.getContext("2d");
+      
+function resizeCanvas() {
+  const container = document.getElementById("gameContainer");
+
+  // Fixed internal resolution
+  canvas.width = 1600;
+  canvas.height = 1200;
+
+  // Scale visually via CSS
+  canvas.style.width = container.clientWidth + "px";
+  canvas.style.height = container.clientHeight + "px";
+
+let  scaleX = container.clientWidth / 1600;
+let  scaleY = container.clientHeight / 1200;
+}
+
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas(); // initial sizing
+
+let scaleX = canvas.width / 1600;
+let scaleY = canvas.height / 1200;
+
 
   const startScreen = document.getElementById("startScreen"),
         startBtn    = document.getElementById("startBtn"),
@@ -109,12 +244,14 @@
   let scrollSpeed   = baseScroll,
       score         = 0,
       distance      = 0,
+      progdist      = 0,
       rings         = 0,
       gameOver      = false,
       lastObstacleX = 0,
       powerActive   = false,
       powerTimer    = 0,
       bgOffset      = 0;
+      level         = 0;
       
  let wasFlying = false; // Tracks if player *was* flying in the last frame 
  let wasActive = false; // Tracks if player *was* active in the last frame 
@@ -133,11 +270,85 @@
   const ringImg      = new Image(); ringImg.src      = "ring.png";
   const flyPowerImg  = new Image(); flyPowerImg.src  = "fly_power.png";      // collectible
   const flySprite    = new Image(); flySprite.src    = "character_fly.png";   // in‑flight
+  const invinciblePowerImg = new Image(); invinciblePowerImg.src = "invincible_power.png"; // Use your own image path
+
+  const invinciblePowers = [];
+
+
+
+  // —————————————————————
+  // AUDIO
+  // —————————————————————
+  const titleMusic = new Audio('sonic_title.mp3');  // Title screen music
+  const gameplayMusic = new Audio('sonic_gameplay.mp3'); // Gameplay music
+  const powerupMusic = new Audio('sonic_invincible.mp3'); // Power-up music
+  const FlyMusic = new Audio('sonic_fly.mp3'); // Flying Power-up music
+  const RingFX = new Audio('sonic_ring.mp3'); // Rig collect FX
+  const EndFX = new Audio('end.mp3'); // Game Over FX
+  const LevelFX = new Audio('level.mp3'); // Level Complete FX
+
+
+  // Function to start gameplay music
+  function startGameMusic() {
+    titleMusic.pause();
+    titleMusic.currentTime = 0;
+    gameplayMusic.play();
+    gameplayMusic.loop = true;
+    EndFX.loop = false;
+  }
+
+  // Function to stop gameplay music and switch to power-up music
+  function startPowerUpMusic() {
+    gameplayMusic.pause();
+    gameplayMusic.currentTime = 0;
+    powerupMusic.play();
+    powerupMusic.loop = true;
+  }
+
+  // Function to stop power-up music and switch back to gameplay music
+  function stopPowerUpMusic() {
+    powerupMusic.pause();
+    powerupMusic.currentTime = 0;
+    gameplayMusic.play();
+    gameplayMusic.loop = true;
+  }
+
+
+  // Function to stop gameplay music and switch to power-up music
+  function startFlyMusic() {
+    gameplayMusic.pause();
+    gameplayMusic.currentTime = 0;
+    FlyMusic.play();
+    FlyMusic.loop = true;
+  }
+
+  // Function to stop power-up music and switch back to gameplay music
+  function stopFlyMusic() {
+    FlyMusic.pause();
+    FlyMusic.currentTime = 0;
+    gameplayMusic.play();
+    gameplayMusic.loop = true;
+  }
+
+
+
+  // —————————————————————
+  // GAME START
+  // —————————————————————
+  startBtn.onclick = () => {
+    gameStarted = true;
+    startScreen.style.display = "none";
+    jumpBtn.style.display = powerupBtn.style.display = "block";
+    startGameMusic(); // Start gameplay music when game begins
+    titleGif.style.display = "none";
+  };
+
+
 
   // —————————————————————
   // PLAYER
   // —————————————————————
- const player = {
+ let player = {
   x:100, y:groundY-149,
   width:200, height:149,
   y_vel:0, jumping:false,
@@ -166,15 +377,22 @@
     if (Math.random() < 1000.9) {
     const ringCount = Math.floor(Math.random() * 5) + 1; // 1 to 5 rings
      for (let i = 0; i < ringCount; i++) {
-     ringsArr.push({
-        
-        x: lastObstacleX + 100,
-        y: groundY - 200 - Math.random() * 200,
-        width:40, height:40, 
-        collected:false,
-       // await sleep(1000);
-        
-      });
+if (Math.random() < 0.9) {  // keep this threshold as you had it
+  const ringCount = Math.floor(Math.random() * 5) + 1; // 1 to 5 rings
+  const baseX = lastObstacleX + 200; // base starting x-position for rings
+  const yPos = groundY - 250; // fixed y-position for horizontal line of rings
+
+  for (let i = 0; i < ringCount; i++) {
+    ringsArr.push({
+      x: baseX + i * 60, // space rings horizontally
+      y: yPos,
+      width: 40,
+      height: 40,
+      collected: false
+    });
+  }
+}
+
     }
     }
     
@@ -186,6 +404,16 @@
       });
     }
   }
+
+if (Math.random() < 0.9) { // 10% chance to spawn
+  invinciblePowers.push({
+    x: lastObstacleX + 250,
+    y: groundY - 200 - Math.random() * 150,
+    size: 50,
+    collected: false
+  });
+}
+
 
   // —————————————————————
   // INPUT
@@ -215,136 +443,184 @@
   function activatePower(){
   if(!powerActive && rings > 0){
     powerActive = true;
-    powerTimer  = 600; // Timer for power-up duration
-    rings--; // Decrease one ring immediately when power-up is activated
-    ringDecreaseTimer = 0; // Reset the timer when power-up starts
-    lastRingDecreaseTime = performance.now(); // Set starting time
+    powerTimer  = 900;
+    rings--;
+    ringDecreaseTimer = 11;
+    lastRingDecreaseTime = performance.now();
 
+    // BOOST GAME SPEED
+    scrollSpeed += 15;
+    bgSpeed += 15; // optional boost to background scroll
+    startPowerUpMusic();
   }
 }
 
 
-  // —————————————————————
-  // UPDATE
-  // —————————————————————
-  function update(){
-    if (!gameStarted || gameOver) return;
+ // —————————————————————
+// UPDATE
+// —————————————————————
+function update() {
 
-     if (powerActive && rings > 0) {
-     let currentTime = performance.now();
-     ringDecreaseTimer++;
+invinciblePowers.forEach(p => {
+  
+  
+  
+  
+  if (!p.collected &&
+      player.x < p.x + p.size &&
+      player.x + player.width > p.x &&
+      player.y < p.y + p.size &&
+      player.y + player.height > p.y) {
     
-    //   rings--; // Keep subtracting one ring each frame while power-up is active
-  
-  
- //     if (ringDecreaseTimer >= 240) {
- //     rings--; // Decrease one ring every second
- //     ringDecreaseTimer = 0; // Reset the timer for the next second
- //   }
-  
-      
-       if (currentTime - lastRingDecreaseTime >= 1000) {
-      rings--;
-      lastRingDecreaseTime = currentTime; // Reset the timer
-    }
+    p.collected = true;
+    player.invincible = true;
+    player.invincibleTimer = 600; // 10 seconds at 60fps
+    startPowerUpMusic(); // or your preferred invincibility music
   }
-      
-      
+});
 
 
-
-    // Jump
-    if ((keys[" "]||keys["ArrowUp"]) && !player.jumping) {
-      player.y_vel = player.jumpStrength;
-      player.jumping = true;
-    }
-
-    // Gravity vs. Fly
-    if (!player.flyActive) {
-      player.y_vel += 0.6;
-      player.y     += player.y_vel;
-      if (player.y + player.height >= groundY) {
-        player.y        = groundY - player.height;
-        player.y_vel    = 0;
-        player.jumping  = false;
-      }
-    } else {
-      player.y = 200; // fixed fly altitude
-      player.flyTimer--;
-      if (player.flyTimer <= 0) {
-        player.flyActive = false;
-      }
-    }
-
-//    if (!player.flyActive && player.invincibleTimer === 0 && !player.invincible) {
-//    player.invincible = true;
-//    player.invincibleTimer = 120;
-//   }
-
-// Detect end of flying
-if (wasFlying && !player.flyActive) {
-  player.invincible = true;
-  player.invincibleTimer = 120; // 2 seconds
-}
-
-// Detect end of power-up
-if (wasActive && !player.powerActive) {
-  player.invincible = true;
-  player.invincibleTimer = 120; // 2 seconds
-}
-
-// Decrease invincible timer
 if (player.invincible) {
   player.invincibleTimer--;
   if (player.invincibleTimer <= 0) {
     player.invincible = false;
+    stopPowerUpMusic(); // revert to normal music
   }
 }
 
-// Update wasFlying and wasActive for the next frame
-wasFlying = player.flyActive;
-wasActive = player.powerActive;
 
 
+// Clamp distance to maxLevelDistance
+// if (distance > maxLevelDistance) distance = maxLevelDistance;
 
-    // Scroll speed
-    scrollSpeed = baseScroll
-                + (player.jumping ? 2 : 0)
-                + (powerActive    ? powerSpeedBoost : 4);
+// Update progress bar
+if (progdist >= maxLevelDistance) {
+  progdist = 0; // Reset distance
+  document.getElementById("progressBarFill").style.width = "0%"; // Reset bar
+ 
+  // Optional: Trigger any level reset or next-level logic here
+      level++;
+      LevelFX.loop = false;        // Ensure looping is disabled
+      LevelFX.currentTime = 0;     // Reset to start in case it has been played before
+      LevelFX.play();              // Play it once
 
-    updateObstacles();
-    updateRings();
-    updateFlies();
-    
-if (!gameOver) {
-  distance += scrollSpeed / 10;
+} else {
+  const progressPercent = (progdist / maxLevelDistance) * 100;
+  document.getElementById("progressBarFill").style.width = progressPercent + "%";
 }
 
-    // Ring-power timer
+
+  if (!gameStarted || gameOver) return;
+
+distance += scrollSpeed /2;
+
+  if (powerActive && rings > 0) {
+    let currentTime = performance.now();
+    ringDecreaseTimer++;
+    scrollSpeed += 15;
+    bgSpeed += 15; // optional boost to background scroll
+
+    if (currentTime - lastRingDecreaseTime >= 300) {
+      rings--;
+      lastRingDecreaseTime = currentTime; // Reset the timer
+    }
+  }
+
+  // Jump
+  if ((keys[" "] || keys["ArrowUp"]) && !player.jumping) {
+    player.y_vel = player.jumpStrength;
+    player.jumping = true;
+  }
+
+  // Gravity vs. Fly
+  if (!player.flyActive) {
+    player.y_vel += 0.6;
+    player.y     += player.y_vel;
+    if (player.y + player.height >= groundY) {
+      player.y        = groundY - player.height;
+      player.y_vel    = 0;
+      player.jumping  = false;
+    }
+  } else {
+    player.y = 200; // fixed fly altitude
+    player.flyTimer--;
+    player.width= 150; 
+    player.height= 300;
+    if (player.flyTimer <= 0) {
+      player.flyActive = false;
+    }
+  }
+
+  // Power-Up Expiration
+  if (wasActive && !powerActive) {
+    player.invincible = true;
+    player.invincibleTimer = 120; // 2 seconds
+    stopPowerUpMusic(); // Stop power-up music when power-up ends
+  }
+  
+   // Power-Up Expiration
+ if (wasFlying && !player.flyActive) {
+  player.invincible = true;
+  player.invincibleTimer = 120; // 2 seconds
+  stopFlyMusic(); // This should be FlyMusic's stop
+}
+
+
+  // Decrease invincible timer
+  if (player.invincible) {
+    player.invincibleTimer--;
+    if (player.invincibleTimer <= 0) {
+      player.invincible = false;
+    }
+  }
+
+  // Update wasFlying and wasActive for the next frame
+  wasFlying = player.flyActive;
+  wasActive = powerActive;
+
+  // Update scroll speed and obstacles
+  scrollSpeed = baseScroll
+                + (player.jumping ? 2 : 0)
+                + (powerActive ? powerSpeedBoost : 4);
+
+  updateObstacles();
+  updateRings();
+  updateFlies();
+
+  if (!gameOver) {
+    distance += scrollSpeed / 10;
+    progdist += scrollSpeed / 10;
+  }
+
+  // Power-up timer countdown
 if (powerActive) {
   powerTimer--;
-  if (powerTimer <= 0 || rings <= 0) {
+  
+  // Decrease rings over time
+  const now = performance.now();
+  if (now - lastRingDecreaseTime > 1000) {
+    rings--;
+    lastRingDecreaseTime = now;
+    if (rings <= 0) powerTimer = 0; // End early if no rings left
+  }
+
+  if (powerTimer <= 0) {
     powerActive = false;
-    player.invincible = true; // Make invincible when power-up expires
-    player.invincibleTimer = 120; // 2 seconds
+    scrollSpeed = baseScroll;   // Reset to normal speed
+    bgSpeed = 1.5;
+    stopPowerUpMusic();
   }
 }
 
 
-    // Game Over?
-    if (gameOver) {
-      restartBtn.style.display = "block";
-      jumpBtn.style.display = powerupBtn.style.display = "none";
-
-if (!gameOver) {
-  distance += scrollSpeed / 10;
-}
-
-
-    }
-
-    bgOffset = (bgOffset - bgSpeed) % canvas.width;
+  // Game Over?
+  if (gameOver) {
+    restartBtn.style.display = "block";
+    jumpBtn.style.display = powerupBtn.style.display = "none";
   }
+
+  bgOffset = (bgOffset - bgSpeed) % canvas.width;
+}
 
   function updateObstacles(){
     for (let i=obstacles.length-1; i>=0; i--){
@@ -362,6 +638,9 @@ if (!gameOver) {
               ph = player.height - 2*player.hitOffset;
         if (px < o.x+o.width && px+pw > o.x && py+ph > o.y) {
     gameOver = true;
+    EndFX.loop = false;        // Ensure looping is disabled
+    EndFX.currentTime = 0;     // Reset to start in case it has been played before
+    EndFX.play();              // Play it once
   }
       }
     }
@@ -380,6 +659,8 @@ if (!gameOver) {
           player.y < r.y + r.height) {
         r.collected = true;
         rings++;
+        RingFX.play();
+        
       }
     }
   }
@@ -397,7 +678,7 @@ if (!gameOver) {
           player.y + player.height > f.y) {
         f.collected      = true;
         player.flyActive = true;
-        player.flyTimer  = 300; // 5s
+        player.flyTimer  = 900; // 15s
         flies.splice(i,1);
       }
     }
@@ -407,6 +688,16 @@ if (!gameOver) {
   // DRAW (with 1.3× scale on ring-power)
   // —————————————————————
   function draw(){
+  
+     invinciblePowers.forEach(p => {
+        if (!p.collected) {
+     ctx.drawImage(invinciblePowerImg, p.x - scrollSpeed, p.y, p.size, p.size);
+     p.x -= scrollSpeed;
+    }
+   });
+
+ 
+  
     // Background
     ctx.drawImage(background, bgOffset, 0, canvas.width, canvas.height);
     ctx.drawImage(background, bgOffset + canvas.width, 0, canvas.width, canvas.height);
@@ -432,12 +723,18 @@ if (!gameOver) {
         drawW  = player.width  * 1.1;
         drawH  = player.height * 1.1;
         drawY  = player.y - (drawH - player.height);
-        baseScroll      = 15;
-        bgSpeed         = 12.5;
-        powerSpeedBoost = 15;
+        player.width = 150;
+        player.height = 249;
+        baseScroll      = 10;
+        bgSpeed         = 20.5;
+        powerSpeedBoost = 10;
+        startPowerUpMusic();
+        distance += scrollSpeed / 5;
+        progdist += scrollSpeed / 5;
     
     if (!gameOver) {
-  distance += scrollSpeed / 15;
+  distance += scrollSpeed / 5;
+  progdist += scrollSpeed / 5;
 }
 
     
@@ -448,12 +745,13 @@ if (!gameOver) {
       {
         player.width    = 200;
         player.height   = 149;
-        baseScroll      = 5;
-        bgSpeed         = 2.5;
-        powerSpeedBoost = 5;
+        baseScroll      = 15;
+        bgSpeed         = 20;
+        powerSpeedBoost = 15;
 
 if (!gameOver) {
-  distance += scrollSpeed / 10;
+  distance += scrollSpeed / 5;
+  progdist += scrollSpeed / 5;
 }
 
 
@@ -478,9 +776,10 @@ if (!player.invincible || Math.floor(player.invincibleTimer / 10) % 2 === 0) {
       ctx.fillText(`Score: ${score}`,                  20,  40);
       ctx.fillText(`Distance: ${Math.floor(distance)}m`,20,  80);
       ctx.fillText(`Rings: ${rings}`,                  20, 120);
+      ctx.fillText(`Level: ${level}`,                  20, 160);
       if (powerActive) {
         ctx.fillStyle = "yellow";
-        ctx.fillText(`Power-Up Active! (${(powerTimer/60).toFixed(1)}s)`, 20, 160);
+        ctx.fillText(`Power-Up Active! (${(powerTimer/60).toFixed(1)}s)`, 20, 240);
       }
       
       if (player.flyActive) {
@@ -491,9 +790,11 @@ if (!player.invincible || Math.floor(player.invincibleTimer / 10) % 2 === 0) {
         baseScroll      = 10;
         bgSpeed         = 20.5;
         powerSpeedBoost = 10;
+        startFlyMusic();
       
       if (!gameOver) {
   distance += scrollSpeed / 8;
+  progdist += scrollSpeed / 8;
 }
 
       
@@ -507,9 +808,11 @@ if (!player.invincible || Math.floor(player.invincibleTimer / 10) % 2 === 0) {
         baseScroll      = 5;
         bgSpeed         = 2.5;
         powerSpeedBoost = 5;
+        stopFlyMusic();
 
 if (!gameOver) {
   distance += scrollSpeed / 10;
+  progdist += scrollSpeed / 10;
 }
 
 
@@ -520,6 +823,21 @@ if (!gameOver) {
 if (gameOver) {
   // Save the current canvas state
   ctx.save();
+    gameplayMusic.pause();
+    powerupMusic.pause();
+    gameplayMusic.pause();
+    FlyMusic.pause(); 
+    titleMusic.currentTime = 0;
+    distance = distance / 1;
+    
+
+
+    
+    
+  //  EndFX.play();  // Play the end sound only once
+    
+    //EndFX.pause();  // Flag to prevent the sound from playing again
+
 
   // Darken the screen to display the game over overlay
   ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
@@ -539,6 +857,7 @@ if (gameOver) {
     { text: "Your Score", font: "36px sans-serif", color: "white" },
     { text: `Score: ${score}`, font: "30px sans-serif", color: "white" },
     { text: `Rings: ${rings}`, font: "30px sans-serif", color: "white" },
+    { text: `Level: ${level}`, font: "30px sans-serif", color: "white" },
     { text: `Distance: ${Math.floor(distance)}`, font: "30px sans-serif", color: "white" },
     { text: "", font: "48px sans-serif", color: "red" },
     { text: "Click Restart or press R", font: "24px sans-serif", color: "yellow" },
@@ -558,10 +877,34 @@ if (gameOver) {
   ctx.restore();
 }
 
+if (gameOver && !EndFX.playing) {
+}
+
+
 
 
 }
 }
+
+
+const maxLevelDistance = 100000; // You can adjust this for level length
+
+
+
+const loadScreen = document.getElementById("loadScreen");
+
+loadScreen.addEventListener("click", () => {
+    // Hide load screen
+    loadScreen.style.display = "none";
+
+    // Start game logic here (e.g., show title screen)
+    // showTitleScreen(); // Your existing function
+
+    // Play title screen music
+    titleMusic.play();
+    titleMusic.loop = true;
+});
+
   // —————————————————————
   // MAIN LOOP
   // —————————————————————
@@ -570,6 +913,7 @@ if (gameOver) {
     ctx.clearRect(0,0,canvas.width,canvas.height);
     draw();
     requestAnimationFrame(loop);
+    
   }
 
   // —————————————————————
@@ -578,6 +922,7 @@ if (gameOver) {
   window.onload = () => {
     spawnObstacle();
     loop();
+    
   };
 
   // —————————————————————
@@ -586,7 +931,9 @@ if (gameOver) {
   function resetGame(){
     score            = 0;
     distance         = 0;
+    progdist         = 0;
     rings            = 0;
+    level            = 0;
     gameOver         = false;
     powerActive      = false;
     powerTimer       = 0;
@@ -603,6 +950,9 @@ if (gameOver) {
     restartBtn.style.display = "none";
     jumpBtn.style.display     = powerupBtn.style.display = "block";
     spawnObstacle();
+    document.getElementById("progressBarFill").style.width = "0%";
+
+    
   }
   </script>
 </body>
